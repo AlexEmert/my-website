@@ -2,7 +2,7 @@ project:
   type: website
 
 website:
-  title: "my-website"
+  title: "Alex Emert"
   navbar:
     left:
       - href: index.qmd
