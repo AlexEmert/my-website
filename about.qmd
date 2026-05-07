@@ -1,5 +1,5 @@
 ---
-title: "About"
+title: "My resume"
 ---
 
-About this site
+<embed src="files/A_E_Resume5_7_26.pdf" type="application/pdf" width="100%" height="600px" />
