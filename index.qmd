@@ -1,7 +1,6 @@
 ---
-title: "my-website"
+title: "Alex Emert"
 ---
 
-This is a Quarto website.
+My Projects:
 
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
