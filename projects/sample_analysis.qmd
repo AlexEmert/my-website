@@ -1,5 +1,5 @@
 ---
-title: "Sample Analysis"
+title: "Predicting NFL Field Goals"
 format: html
 execute: 
   cache: true
@@ -9,4 +9,68 @@ execute:
 
 ## Introduction
 
-The NFL is one of the most popular sports organizations in the United States. Through a combination of marketing and spectacle, the Super Bowl is watched even by people that don't watch or even like football. One way in which this marketing has resulted in an extremely profitable industry is through sports betting. Through a variety of apps, you can put money on pretty much anything. This opens many opportunities for statisticians, through prediction and data analysis that we can use to get ahead of the majority of people. In this sample analysis, I will explore the prediction of field goals made in the NFL playoffs.
+The NFL is one of the most popular sports organizations in the United States. Through a combination of marketing and spectacle, the Super Bowl is watched even by people that would usually watch or even like football. One way in which this marketing has resulted in an extremely profitable industry is through sports betting. Through a variety of apps, you can put money on pretty much anything nowadays. This opens many opportunities for statisticians, through prediction and data analysis that we can use to get ahead of the majority of people. In this sample analysis, I will explore the prediction of field goals made in a few years of NFL games.
+
+Because we don't know what the conditions will be like until during the game, I will be using a data set consiting of all of the previous NFL field goals attempted in the last couple years. Because of the way many betting apps work, we will be predicting whether or not any certain field goal will be made or not based off of a variety of contextual conditions, like whether or game score.
+
+### The Data
+
+`Made`: Whether or not the field goal was successfully scored
+`Dist`: How far the field goal was attempted from, in yards.
+`Home`: Whether or not the team is at their home stadium.
+`Stadium #`: An arbitraty ID of which stadium it was in.
+`Indoor`: Whether or not the field is indoors.
+`Grass`: Whether or not the field is real grass or synthetic turf.
+`Playoff`: Whether or not the field goal was attempted in the playoffs.
+`Time`: How many minutes there are left in the game.
+`Qtr`: Which quarter of the game it is.
+`Marg`: The difference in score between the kicking team and the opponent.
+`Temp`: The temperature, in degrees Fahrenheit.
+`Precip`: The precipitation, or rain, in inches per hour.
+`Dewpt`: The degrees in fahrenheit for dew to form.
+`Humidity`: The relative humidity in percent.
+`H/T-wind`: Windspeed parallel to kick, in miles per hour.
+`C-wind`: Crosswind speed (perpendicular to kick), in miles per hour.
+`Altitude`: The altitude of the stadium, in feet.
+`Wind`: Overall wind speed, in miles per hour.
+`Backup`: Whether or not the field goal was attempted by a backup kicker (not the team's starter, or best).
+`Def PA`: Points allowed by the other team (ability to prevent scoring).
+
+
+```{python}
+#| include: false
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split, RepeatedKFold
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV
+import matplotlib.pyplot as plt
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+```
+
+```{python}
+nfl_fg = pd.read_csv('../data/nfl-fg-data.csv')
+
+# Drop unnecessary/repetitive columns
+nfl_fg_clean = nfl_fg.drop(columns=['FG ID', "|Marg|", 'Denver', 'Precip Bin'])
+```
+
+
+## Exploratory Data Analysis
+
+
+
+
+
+```{python}
+nfl_train, nfl_test = train_test_split(nfl_fg_clean, test_size=0.2, random_state=4025)
+```
+
+```{python}
+nfl_train["Made"].mean()
+```
+As you can see, about 82 percent of the field goals in my training set were made. This means that accuracy should  be higher than 83% as it sets a baseline for the model.
