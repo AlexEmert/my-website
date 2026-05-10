@@ -41,6 +41,8 @@ Because we don't know what the conditions will be like until during the game, I 
 #| include: false
 import pandas as pd
 import numpy as np
+from plotnine import *
+import seaborn as sns
 from sklearn.model_selection import train_test_split, RepeatedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -62,9 +64,71 @@ nfl_fg_clean = nfl_fg.drop(columns=['FG ID', "|Marg|", 'Denver', 'Precip Bin'])
 
 ## Exploratory Data Analysis
 
+Now that we've looked at our variables, it's time to look a little deeper into what this data looks like. Here are some relevant plots of the data:
+
+```{python}
+#| include: false
+nfl_graphing = nfl_fg_clean.copy()
+nfl_graphing['Made'] = nfl_graphing['Made'].astype('category')
+```
+
+```{python}
+(
+  ggplot(nfl_graphing, aes(x='Made')) +
+  geom_bar()
+)
+```
 
 
 
+```{python}
+corr = nfl_fg_clean.corr()
+mask = np.triu(np.ones_like(corr, dtype=bool))
+f, ax = plt.subplots(figsize=(10, 8))
+
+cmap = sns.diverging_palette(230, 20, as_cmap=True)
+
+sns.heatmap(
+    corr, 
+    mask=mask, 
+    cmap='viridis'
+)
+
+plt.title('Correlation Heatmap', fontsize=16, pad=20)
+plt.show()
+```
+
+```{python}
+(
+  ggplot(nfl_graphing, aes(x='Def PA', fill='Made')) +
+  geom_histogram()
+)
+```
+
+```{python}
+(
+  ggplot(nfl_graphing, aes(x='', fill='Made')) +
+  geom_histogram()
+)
+```
+
+```{python}
+(
+  ggplot(nfl_graphing, aes(x='Made', y='Wind')) +
+  geom_boxplot()
+)
+```
+
+```{python}
+# (
+#   ggplot(nfl_graphing, aes(x='', y='')) +
+#   geom_boxplot()
+# )
+```
+
+
+
+### Data Splitting
 
 ```{python}
 nfl_train, nfl_test = train_test_split(nfl_fg_clean, test_size=0.2, random_state=4025)
