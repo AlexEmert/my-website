@@ -1,16 +1,23 @@
 [
   {
-    "objectID": "about.html",
-    "href": "about.html",
-    "title": "My resume",
+    "objectID": "projects.html",
+    "href": "projects.html",
+    "title": "Data Science Projects",
     "section": "",
-    "text": "My Resume"
+    "text": "Below is a collection of my work in statistics, machine learning, and data analysis.\n\n\n\n\n\n\n\n\n\n\n\n\nSample Analysis\n\n\n\n\n\n\n\n\n\n\n\n\n\nNo matching items"
   },
   {
     "objectID": "index.html",
     "href": "index.html",
     "title": "Alex Emert",
     "section": "",
-    "text": "My Projects:"
+    "text": "I am a student at the College of Idaho studying Mathematics/Physics with an interest in Statistics. Currently, I’m focusing on predictive machine learning. This summer, I will be conducting research related to predicting astronomical features related to Yellowballs using data from the Milky Way Project, and potentially using deep learning and other methods."
+  },
+  {
+    "objectID": "projects/sample_analysis.html#introduction",
+    "href": "projects/sample_analysis.html#introduction",
+    "title": "Sample Analysis",
+    "section": "Introduction",
+    "text": "Introduction\nThe NFL is one of the most popular sports organizations in the United States. Through a combination of marketing and spectacle, the Super Bowl is watched even by people that don’t watch or even like football. One way in which this marketing has resulted in an extremely profitable industry is through sports betting. Through a variety of apps, you can put money on pretty much anything. This opens many opportunities for statisticians, through prediction and data analysis that we can use to get ahead of the majority of people. In this sample analysis, I will explore the prediction of field goals made in the NFL playoffs."
   }
 ]
