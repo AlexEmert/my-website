@@ -1,8 +1,12 @@
 ---
 title: "Predicting NFL Field Goals"
-format: html
-execute: 
+format: 
+  html:
+    code-fold: true
+execute:
+  freeze: auto
   cache: true
+jupyter: python
 ---
 
 ### By Alex Emert
