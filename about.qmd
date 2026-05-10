@@ -1,7 +1,0 @@
----
-title: "About"
----
-
-My name is Alex Emert. I am a freshman (soon to be sophomore) Mathematics/Physics student at the College of Idaho. 
-
-![My Resume](../files/A_E_Resume5_7_26.pdf)

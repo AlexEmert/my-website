@@ -6,19 +6,33 @@ project:
 
 website:
   title: "Alex Emert"
+  description: "Statistics Portfolio"
   navbar:
+    background: primary
     left:
-      - href: index.qmd
-        text: Home
-      - about.qmd
+      - text: "Home"
+        href: index.qmd
+      - text: "Job Application"
+        menu:
+          - text: "Cover Letter"
+            href: application/coverletter.qmd
+          - text: "Resume"
+            href: application/resume.qmd
+          - text: "Sample Analysis"
+            href: projects/sample_analysis.qmd
+      - text: "All Projects"
+        href: projects.qmd
+    right:
+    - icon: github
+      href: https://github.com/AlexEmert
+    # - icon: linkedin
+    #   href: https://www.linkedin.com/in/yourusername
 
 format:
   html:
-    theme:
-      - cosmo
-      - brand
+    theme: 
+      light: cosmo
+      dark: darkly
     css: styles.css
     toc: true
-
-
 

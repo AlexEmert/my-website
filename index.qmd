@@ -1,6 +1,17 @@
 ---
 title: "Alex Emert"
+image: profile_pic_.jpg
+about:
+  template: jolla
+  image-shape: round
+  links:
+    - icon: github
+      text: Github
+      href: https://github.com/AlexEmert
+    - icon: envelope
+      text: Email
+      href: mailto:alexander.emert@yotes.collegeofidaho.edu
 ---
 
-My Projects:
-
+I am a student at the College of Idaho studying Mathematics/Physics with an interest in Statistics. 
+Currently, I'm focusing on predictive machine learning. This summer, I will be conducting research related to predicting astronomical features related to Yellowballs using data from the Milky Way Project, and potentially using deep learning and other methods.

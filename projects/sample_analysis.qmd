@@ -1,0 +1,12 @@
+---
+title: "Sample Analysis"
+format: html
+execute: 
+  cache: true
+---
+
+### By Alex Emert
+
+## Introduction
+
+The NFL is one of the most popular sports organizations in the United States. Through a combination of marketing and spectacle, the Super Bowl is watched even by people that don't watch or even like football. One way in which this marketing has resulted in an extremely profitable industry is through sports betting. Through a variety of apps, you can put money on pretty much anything. This opens many opportunities for statisticians, through prediction and data analysis that we can use to get ahead of the majority of people. In this sample analysis, I will explore the prediction of field goals made in the NFL playoffs.
