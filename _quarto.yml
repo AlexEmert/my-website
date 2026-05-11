@@ -1,7 +1,10 @@
 project:
   type: website
   resources:
-    - "files/"
+    - "data/"
+    - "images/"
+    - "application/"
+    - "projects/"
   output-dir: docs
 
 website:

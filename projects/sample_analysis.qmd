@@ -6,11 +6,6 @@ format:
 execute:
   freeze: auto
   cache: true
-jupyter:
- kernelspec:
-    display_name: "Python (math4025)"
-    language: "python"
-    name: "math4025"
 ---
 
 ### By Alex Emert
