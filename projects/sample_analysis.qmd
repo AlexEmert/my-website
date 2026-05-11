@@ -6,7 +6,11 @@ format:
 execute:
   freeze: auto
   cache: true
-jupyter: python3
+jupyter:
+ kernelspec:
+    display_name: "Python (math4025)"
+    language: "python"
+    name: "math4025"
 ---
 
 ### By Alex Emert
@@ -79,9 +83,12 @@ nfl_graphing['Made'] = nfl_graphing['Made'].astype('category')
 ```{python}
 (
   ggplot(nfl_graphing, aes(x='Made')) +
-  geom_bar()
+  geom_bar(fill = '#FF474C')
+  + scale_x_discrete(labels=["Missed", "Scored"])
+  + labs(title = 'Amount of Field Goals Made')
 )
 ```
+As we can see, most of the field goals were successful. This will mean that our accuracy should be pretty high as a baseline, due to the model mostly predicting success in the first place.
 
 
 
@@ -102,12 +109,18 @@ plt.title('Correlation Heatmap', fontsize=16, pad=20)
 plt.show()
 ```
 
+While a correlation heatmap should be taken with a grain of salt with a binary response variable, this shows us that Distance may be something that we should look out for. 
+
+
 ```{python}
-(
-  ggplot(nfl_graphing, aes(x='Def PA', fill='Made')) +
-  geom_histogram()
-)
+# (
+#   ggplot(nfl_graphing, aes(x='Def PA', fill='Made')) +
+#   geom_histogram() +
+#   labs(title='Opponents Points Allowed Distribution')
+# )
 ```
+
+
 
 ```{python}
 (
@@ -116,10 +129,12 @@ plt.show()
 )
 ```
 
+
 ```{python}
 (
-  ggplot(nfl_graphing, aes(x='Made', y='Wind')) +
-  geom_boxplot()
+  ggplot(nfl_graphing, aes(x='H/T-wind', fill='Made')) +
+  geom_histogram() +
+  labs(title='Parallel-facing Wind Distribution')
 )
 ```
 
@@ -136,6 +151,9 @@ plt.show()
 
 ```{python}
 nfl_train, nfl_test = train_test_split(nfl_fg_clean, test_size=0.2, random_state=4025)
+
+X_train = nfl_train.drop(columns=['Made'])
+y_train = nfl_train['Made']
 ```
 
 ```{python}
