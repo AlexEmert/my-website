@@ -12,9 +12,9 @@ execute:
 
 ## Introduction
 
-The NFL is one of the most popular sports organizations in the United States. Through a combination of marketing and spectacle, the Super Bowl is watched even by people that would usually watch or even like football. One way in which this marketing has resulted in an extremely profitable industry is through sports betting. Through a variety of apps, you can put money on pretty much anything nowadays. This opens many opportunities for statisticians, through prediction and data analysis that we can use to get ahead of the majority of people. In this sample analysis, I will explore the prediction of field goals made in a few years of NFL games.
+The NFL is one of the most popular sports organizations in the United States. Through a combination of marketing and spectacle, the Super Bowl is watched even by people that would not usually watch or even like football. One way in which marketing has resulted in this being an extremely profitable industry is through sports betting. Through a variety of apps, you can bet money on pretty much anything nowadays. This opens many opportunities for statisticians through prediction and data analysis that we can use to get ahead of the majority of people. In this sample analysis, I will explore the prediction of field goals made in a few years of NFL games.
 
-Because we don't know what the conditions will be like until during the game, I will be using a data set consiting of all of the previous NFL field goals attempted in the last couple years. Because of the way many betting apps work, we will be predicting whether or not any certain field goal will be made or not based off of a variety of contextual conditions, like whether or game score.
+Because we don't know what the conditions will be like until during the game, I will be using a data set consiting of all of the previous NFL field goals attempted in the last couple years. Because of the way many betting apps work, we will be predicting whether or not any certain field goal will be made or not based off of a variety of contextual conditions, like weather or game score.
 
 ### The Data
 
@@ -46,7 +46,7 @@ import pandas as pd
 import numpy as np
 from plotnine import *
 import seaborn as sns
-from sklearn.model_selection import train_test_split, RepeatedKFold
+from sklearn.model_selection import train_test_split, RepeatedKFold, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
@@ -55,6 +55,9 @@ from sklearn.model_selection import GridSearchCV
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import RocCurveDisplay
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
 ```
 
 ```{python}
@@ -67,7 +70,7 @@ nfl_fg_clean = nfl_fg.drop(columns=['FG ID', "|Marg|", 'Denver', 'Precip Bin'])
 
 ## Exploratory Data Analysis
 
-Now that we've looked at our variables, it's time to look a little deeper into what this data looks like. Here are some relevant plots of the data:
+Now that we've looked at our variables, it's time to look a little deeper into what this data set looks like. Here are some relevant plots of the data:
 
 ```{python}
 #| include: false
@@ -83,9 +86,8 @@ nfl_graphing['Made'] = nfl_graphing['Made'].astype('category')
   + labs(title = 'Amount of Field Goals Made')
 )
 ```
-As we can see, most of the field goals were successful. This will mean that our accuracy should be pretty high as a baseline, due to the model mostly predicting success in the first place.
 
-
+As we can see, most of the field goals were successful. This will mean that our accuracy should be pretty high as a baseline, due to the model mostly predicting successes in the first place.
 
 ```{python}
 corr = nfl_fg_clean.corr()
@@ -104,25 +106,17 @@ plt.title('Correlation Heatmap', fontsize=16, pad=20)
 plt.show()
 ```
 
-While a correlation heatmap should be taken with a grain of salt with a binary response variable, this shows us that Distance may be something that we should look out for. 
-
-
-```{python}
-# (
-#   ggplot(nfl_graphing, aes(x='Def PA', fill='Made')) +
-#   geom_histogram() +
-#   labs(title='Opponents Points Allowed Distribution')
-# )
-```
-
+While a correlation heatmap should be taken with a grain of salt with a binary response variable, this shows us that Distance may be something that we should look out for. It also tells us about any collinearity between variables that may impact strategies like logistic regression.
 
 
 ```{python}
 (
-  ggplot(nfl_graphing, aes(x='', fill='Made')) +
+  ggplot(nfl_graphing, aes(x='Temp', fill='Made')) +
   geom_histogram()
 )
 ```
+
+Depending on the strategy we use, skewness like this one may or may not be a problem. 
 
 
 ```{python}
@@ -133,13 +127,18 @@ While a correlation heatmap should be taken with a grain of salt with a binary r
 )
 ```
 
+While transformations may need to be applied, like yeo-johnson or similar, if a forest-based model is used this will have less of an impact and may be more useful and interpretable if left unchanged.
+
 ```{python}
-# (
-#   ggplot(nfl_graphing, aes(x='', y='')) +
-#   geom_boxplot()
-# )
+(
+  ggplot(nfl_graphing, aes(x='Made', y='Marg', fill = "Made")) +
+  geom_boxplot() +
+  scale_x_discrete(labels=["Missed", "Scored"]) +
+  labs(title = "Difference in Field Goals Made Based on Game Score Margin")
+)
 ```
 
+While outliers may be something to consider, it is also important to think about how many samples are on each side of this boxplot. While Scored has a wider range, it also has a significant more number of observations in the first place.
 
 
 ### Data Splitting
@@ -149,9 +148,195 @@ nfl_train, nfl_test = train_test_split(nfl_fg_clean, test_size=0.2, random_state
 
 X_train = nfl_train.drop(columns=['Made'])
 y_train = nfl_train['Made']
+X_test = nfl_test.drop(columns=['Made'])
+y_test = nfl_test['Made']
 ```
 
 ```{python}
-nfl_train["Made"].mean()
+print(nfl_train["Made"].mean())
 ```
 As you can see, about 82 percent of the field goals in my training set were made. This means that accuracy should  be higher than 83% as it sets a baseline for the model.
+
+### Preprocessing
+
+Because the dataset consists of no missing values, imputation will not be needed. Scaling is not necessary for tree-based models, but can be useful for other types. To take advantage of this, we will try with and without scaling.
+
+Additionally, all categorical variables are already in the form we need (dummy coded) to those can be passed through for now.
+
+```{python}
+cat_vars = ['Home', 'Indoor', 'Grass', 'Playoff', 'Backup']
+num_vars = ['Dist', 'Stadium #', 'Time', 'Qtr', 'Marg', 'Temp', 'Precip', 'Dewpt', 'Humidity', 'H/T-wind', 'C-wind', 'Altitude', 'Wind', 'Def PA']
+features_list = X_train.columns.tolist()
+
+preproc_scaler = ColumnTransformer([
+  ('num', StandardScaler(), num_vars),
+  ('cat', 'passthrough', cat_vars)
+])
+```
+
+
+## Model Fitting and Tuning
+
+Models that will be fitted:
+- Logistic Regression
+- K Nearest Neighbors
+- Random Forest
+- XGBoost classifier
+
+### Logistic Regression
+```{python}
+logreg_pipe = Pipeline([
+    ('preprocess', preproc_scaler),
+    ('model', LogisticRegression(l1_ratio=1, solver='saga'))
+])
+
+param_grid = {
+    'model__C': np.logspace(-4, 2, 50)
+}
+
+cv = RepeatedKFold(n_splits=5, n_repeats=5, random_state=4025)
+
+grid_search = GridSearchCV(logreg_pipe, param_grid, cv=cv, scoring='f1')
+
+grid_search.fit(X=X_train, y=y_train)
+print(grid_search.best_params_)
+```
+
+Because accuracy is likely to be untrustworthy due to our uneven class sizes, f1-score will be used instead in the grid search. This is because it weights precision and recall so that our result is more balanced.
+
+```{python}
+logreg_pipe.fit(X_train, y_train)
+
+fig, ax = plt.subplots(figsize=(8, 6))
+
+RocCurveDisplay.from_estimator(logreg_pipe, X_test, y_test, ax=ax, name="Logistic Regression")
+
+plt.plot([0, 1], [0, 1], linestyle='--', color='red', label='Random Guess')
+plt.title('ROC AUC Curve')
+plt.grid(alpha=0.3)
+plt.legend()
+plt.show()
+```
+
+It seems our ROC curve is pretty good, but it definitely could be better.
+
+```{python}
+logreg_y_pred = logreg_pipe.predict(X=X_test)
+print(accuracy_score(y_test, logreg_y_pred))
+```
+
+Same with our accuracy. We would like this to be a little higher. Let's try some other models.
+
+### KNN
+```{python}
+knn_pipe = Pipeline([
+    ('preprocess', preproc_scaler),
+    ('knn', KNeighborsClassifier())
+])
+
+param_grid = {
+    'knn__n_neighbors': np.linspace(1, 100, 100, dtype=int)
+}
+
+knn_cv = RepeatedKFold(n_splits=5, n_repeats=5, random_state = 4025)
+
+knn_grid_search = GridSearchCV(
+    estimator = knn_pipe,
+    param_grid=param_grid,
+    cv=knn_cv,
+    scoring='f1'
+)
+
+knn_grid_search.fit(X_train, y_train)
+
+print(f"Best Parameters: {knn_grid_search.best_params_}")
+```
+
+```{python}
+knn_best = knn_grid_search.best_estimator_
+knn_best.fit(X_train, y_train)
+
+knn_y_pred = knn_best.predict(nfl_test[features_list])
+knn_accuracy = accuracy_score(y_true=nfl_test['Made'], y_pred = knn_y_pred)
+print(knn_accuracy)
+```
+
+As you can see, KNN performed a little worse. Now on to some more complex models.
+
+
+### Random Forest
+
+Because random forest doesn't require scaling, we don't really even require preprocessing for this model.
+```{python}
+rf_pipe = Pipeline([
+  ('clf', RandomForestClassifier(random_state=4025))
+])
+
+param_grid = {
+    'clf__n_estimators': [100, 200, 300],
+    'clf__max_depth': [None, 10, 20],
+    'clf__max_features': ['sqrt', 'log2'],
+    'clf__min_samples_leaf': [1, 2, 4],
+    'clf__class_weight': ['balanced', 'balanced_subsample', None]
+}
+
+rf_cv = StratifiedKFold(n_splits=5, random_state=4025, shuffle=True)
+
+num_iter = 10
+
+rf_grid = GridSearchCV(
+    rf_pipe, 
+    param_grid=param_grid,
+    cv=rf_cv,
+    scoring='f1',
+    n_jobs=-1
+)
+
+rf_grid.fit(X_train, y_train)
+```
+
+```{python}
+y_preds_tuned = rf_grid.best_estimator_.predict(X_test)
+rf_tuned_acc = accuracy_score(y_test, y_preds_tuned)
+print(f"The tuned accuracy is: {rf_tuned_acc}")
+```
+
+Interestingly, this is a little worse than the Logistic Regression model. Maybe the XGBoost will perform better.
+
+
+### XGBoost
+```{python}
+xg_pipe = Pipeline([
+  ('clf', XGBClassifier(random_state=4025))
+])
+
+param_grid = {
+    'max_depth': [3, 5, 7],
+    'min_child_weight': [1, 5, 10],
+    'subsample': [0.8], 
+    'colsample_bytree': [0.8],
+    'learning_rate': [0.01, 0.1],
+    'gamma': [0, 0.2, 0.5],
+    'scale_pos_weight': [1, scale_weight] 
+}
+
+rf_cv = StratifiedKFold(n_splits=5, random_state=4025, shuffle=True)
+
+num_iter = 10
+
+rf_grid = GridSearchCV(
+    rf_pipe, 
+    param_grid=param_grid,
+    cv=rf_cv,
+    scoring='f1',
+    n_jobs=-1
+)
+
+rf_grid.fit(X_train, y_train)
+```
+
+```{python}
+y_preds_tuned = rf_grid.best_estimator_.predict(X_test)
+rf_tuned_acc = accuracy_score(y_test, y_preds_tuned)
+print(f"The tuned accuracy is: {rf_tuned_acc}")
+```
