@@ -5,7 +5,6 @@ project:
     - "images/"
     - "application/"
     - "projects/"
-  output-dir: docs
 
 website:
   title: "Alex Emert"
