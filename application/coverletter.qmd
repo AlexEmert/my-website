@@ -8,9 +8,4 @@ title: 'Cover Letter'
 
 <br>
 
-<iframe 
-  src="coverletter.pdf" 
-  width="100%" 
-  height="1000px" 
-  style="border: 1px solid #eee;">
-</iframe>
+{{ pdf files/coverletter.pdf width=100% height=800 }}
