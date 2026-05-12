@@ -49,15 +49,17 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split, RepeatedKFold, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import RocCurveDisplay
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
+from sklearn.inspection import permutation_importance
+from feature_engine.encoding import RareLabelEncoder
 ```
 
 ```{python}
@@ -65,6 +67,9 @@ nfl_fg = pd.read_csv('../data/nfl-fg-data.csv')
 
 # Drop unnecessary/repetitive columns
 nfl_fg_clean = nfl_fg.drop(columns=['FG ID', "|Marg|", 'Denver', 'Precip Bin'])
+
+# Because stadium ID is arbitary but formated as numeric
+nfl_fg_clean['Stadium #'] = nfl_fg_clean['Stadium #'].astype('category')
 ```
 
 
@@ -73,8 +78,9 @@ nfl_fg_clean = nfl_fg.drop(columns=['FG ID', "|Marg|", 'Denver', 'Precip Bin'])
 Now that we've looked at our variables, it's time to look a little deeper into what this data set looks like. Here are some relevant plots of the data:
 
 ```{python}
-#| include: false
 nfl_graphing = nfl_fg_clean.copy()
+
+# Helps with graphing
 nfl_graphing['Made'] = nfl_graphing['Made'].astype('category')
 ```
 
@@ -161,17 +167,31 @@ As you can see, about 82 percent of the field goals in my training set were made
 
 Because the dataset consists of no missing values, imputation will not be needed. Scaling is not necessary for tree-based models, but can be useful for other types. To take advantage of this, we will try with and without scaling.
 
-Additionally, all categorical variables are already in the form we need (dummy coded) to those can be passed through for now.
+Additionally, most of the categorical variables are already in the form we need (dummy coded) to those can be passed through for now.
+
+Unfortunately, Stadium # is not encoded. This will have to be addressed with a rare label encoder, followed by a one hot encoder.
 
 ```{python}
 cat_vars = ['Home', 'Indoor', 'Grass', 'Playoff', 'Backup']
-num_vars = ['Dist', 'Stadium #', 'Time', 'Qtr', 'Marg', 'Temp', 'Precip', 'Dewpt', 'Humidity', 'H/T-wind', 'C-wind', 'Altitude', 'Wind', 'Def PA']
+need_encoding_cols = ['Stadium #']
+num_vars = ['Dist', 'Time', 'Qtr', 'Marg', 'Temp', 'Precip', 'Dewpt', 'Humidity', 'H/T-wind', 'C-wind', 'Altitude', 'Wind', 'Def PA']
 features_list = X_train.columns.tolist()
 
+stadium_pipe = Pipeline([
+    ('rare_grouper', RareLabelEncoder(tol=0.05, n_categories=5, replace_with='Other')),
+    ('one_hot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+])
+
 preproc_scaler = ColumnTransformer([
+  ('stadium', stadium_pipe, need_encoding_cols),
   ('num', StandardScaler(), num_vars),
   ('cat', 'passthrough', cat_vars)
 ])
+
+preproc_no_scaler = ColumnTransformer([
+  ('stadium', stadium_pipe, need_encoding_cols),
+  ('cat', 'passthrough', cat_vars)
+])  
 ```
 
 
@@ -269,6 +289,7 @@ As you can see, KNN performed a little worse. Now on to some more complex models
 Because random forest doesn't require scaling, we don't really even require preprocessing for this model.
 ```{python}
 rf_pipe = Pipeline([
+  ('preproc', preproc_no_scaler),
   ('clf', RandomForestClassifier(random_state=4025))
 ])
 
@@ -307,36 +328,86 @@ Interestingly, this is a little worse than the Logistic Regression model. Maybe 
 ### XGBoost
 ```{python}
 xg_pipe = Pipeline([
+  ('preproc', preproc_no_scaler),
   ('clf', XGBClassifier(random_state=4025))
 ])
 
 param_grid = {
-    'max_depth': [3, 5, 7],
-    'min_child_weight': [1, 5, 10],
-    'subsample': [0.8], 
-    'colsample_bytree': [0.8],
-    'learning_rate': [0.01, 0.1],
-    'gamma': [0, 0.2, 0.5],
-    'scale_pos_weight': [1, scale_weight] 
+    'clf__max_depth': [3, 5, 7],           
+    'clf__min_child_weight': [1, 5, 10],    
+    'clf__subsample': [0.8],
+    'clf__colsample_bytree': [0.8],
+    'clf__learning_rate': [0.01, 0.1],
+    'clf__gamma': [0, 0.2, 0.5]
 }
 
-rf_cv = StratifiedKFold(n_splits=5, random_state=4025, shuffle=True)
+xg_cv = StratifiedKFold(n_splits=5, random_state=4025, shuffle=True)
 
-num_iter = 10
+num_iter = 20
 
-rf_grid = GridSearchCV(
-    rf_pipe, 
-    param_grid=param_grid,
-    cv=rf_cv,
+xg_grid = RandomizedSearchCV(
+    xg_pipe,
+    param_grid,
+    cv=xg_cv,
+    n_iter=num_iter,
     scoring='f1',
     n_jobs=-1
 )
 
-rf_grid.fit(X_train, y_train)
+xg_grid.fit(X_train, y_train)
 ```
 
 ```{python}
-y_preds_tuned = rf_grid.best_estimator_.predict(X_test)
-rf_tuned_acc = accuracy_score(y_test, y_preds_tuned)
-print(f"The tuned accuracy is: {rf_tuned_acc}")
+xg_y_preds_tuned = xg_grid.best_estimator_.predict(X_test)
+xg_tuned_acc = accuracy_score(y_test, xg_y_preds_tuned)
+print(f"The tuned accuracy is: {xg_tuned_acc}")
 ```
+
+It seems the accuracy of this was quite similar to that of the other similar models.
+
+#### Feature Importances
+
+Earlier, after looking at the correlation matrix, it was estimated the `Dist`, or Distance, would be the most important feature. We can check this by looking at the XGBoost feature importances.
+```{python}
+result = permutation_importance(
+    xg_grid.best_estimator_, X_test, y_test, 
+    n_repeats=20, 
+    random_state=4025, 
+    scoring='f1'
+)
+
+importances_df = pd.DataFrame({
+    'feature': features_list,
+    'mean': result.importances_mean,
+    'std': result.importances_std
+}).sort_values(by='mean', ascending=False)
+
+plt.figure(figsize=(10, 6))
+plt.barh(importances_df['feature'][::-1], importances_df['mean'][::-1], xerr=importances_df['std'][::-1])
+plt.xlabel("Decrease in F1 Score")
+plt.title("Permutation Feature Importance")
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+print(xg_grid.best_estimator_.predict_proba(X_test)[:5])
+```
+
+## Model Performance
+
+In the end, our final results were:
+Logistic Regression: 84.16% accuracy
+KNN: 83.67% accuracy
+Random Forest: 83.3% accuracy
+XGBoost: 83.67% accuracy
+
+While there are other more important metrics that may capture the successfulness of the model better, I think that accuracy is probably overall more relevant because if we were actually using this data to bet money or anything similar to that in the real world, whether or not we are correct is the primary importance. 
+
+## Conclusion
+
+Overall, it seems like many of the models performed similarly. I think that this could be attributed to the size of the data, so if I were to go back and do this project again I would try to find even more data. 
+
+Another important part of this project was the lack of missing data, which is a part of why there was little data in the first place (I assume that is when they started collecting all that weather data). Were there to be more data and missing data, the process would be similar but a bit more complicated with imputation. 
+
+In the end, this project was a useful waay to apply concepts of machine learning and predictions to a data set with real world implications. I learned a lot about how to present data simply, and how to communicate in a way that is comprehensible to a larger audience. In the future, I would like to work on something with even more concrete application, which I think would allow me to use other skills that I am still developing.
