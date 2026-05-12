@@ -184,7 +184,7 @@ y_test = nfl_test['Made']
 ```
 
 ```{python}
-print(f"The average number of field goals in this data set made is: "{nfl_train["Made"].mean()})
+print(f"The average number of field goals in this data set made is: {nfl_train["Made"].mean()}")
 ```
 As you can see, about 82 percent of the field goals in my training set were made. This means that accuracy should  be higher than 83% as it sets a baseline for the model.
 
