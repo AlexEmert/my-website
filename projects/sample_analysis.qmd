@@ -15,30 +15,6 @@ The NFL is one of the most popular sports organizations in the United States. Th
 
 Because we don't know what the conditions will be like until during the game, I will be using a data set consiting of all of the previous NFL field goals attempted in the last couple years. Because of the way many betting apps work, we will be predicting whether or not any certain field goal will be made or not based off of a variety of contextual conditions, like weather or game score.
 
-### The Data
-
-`Made`: Whether or not the field goal was successfully scored
-`Dist`: How far the field goal was attempted from, in yards.
-`Home`: Whether or not the team is at their home stadium.
-`Stadium #`: An arbitraty ID of which stadium it was in.
-`Indoor`: Whether or not the field is indoors.
-`Grass`: Whether or not the field is real grass or synthetic turf.
-`Playoff`: Whether or not the field goal was attempted in the playoffs.
-`Time`: How many minutes there are left in the game.
-`Qtr`: Which quarter of the game it is.
-`Marg`: The difference in score between the kicking team and the opponent.
-`Temp`: The temperature, in degrees Fahrenheit.
-`Precip`: The precipitation, or rain, in inches per hour.
-`Dewpt`: The degrees in fahrenheit for dew to form.
-`Humidity`: The relative humidity in percent.
-`H/T-wind`: Windspeed parallel to kick, in miles per hour.
-`C-wind`: Crosswind speed (perpendicular to kick), in miles per hour.
-`Altitude`: The altitude of the stadium, in feet.
-`Wind`: Overall wind speed, in miles per hour.
-`Backup`: Whether or not the field goal was attempted by a backup kicker (not the team's starter, or best).
-`Def PA`: Points allowed by the other team (ability to prevent scoring).
-
-
 ```{python}
 #| include: false
 import pandas as pd
@@ -62,6 +38,7 @@ from feature_engine.encoding import RareLabelEncoder
 ```
 
 ```{python}
+#| code-fold: false
 nfl_fg = pd.read_csv('../data/nfl-fg-data.csv')
 
 # Drop unnecessary/repetitive columns
@@ -70,6 +47,54 @@ nfl_fg_clean = nfl_fg.drop(columns=['FG ID', "|Marg|", 'Denver', 'Precip Bin'])
 # Because stadium ID is arbitary but formated as numeric
 nfl_fg_clean['Stadium #'] = nfl_fg_clean['Stadium #'].astype('category')
 ```
+
+### The Data
+
+`Made`: Whether or not the field goal was successfully scored
+
+`Dist`: How far the field goal was attempted from, in yards.
+
+`Home`: Whether or not the team is at their home stadium.
+
+`Stadium #`: An arbitraty ID of which stadium it was in.
+
+`Indoor`: Whether or not the field is indoors.
+
+`Grass`: Whether or not the field is real grass or synthetic turf.
+
+`Playoff`: Whether or not the field goal was attempted in the playoffs.
+
+`Time`: How many minutes there are left in the game.
+
+`Qtr`: Which quarter of the game it is.
+
+`Marg`: The difference in score between the kicking team and the opponent.
+
+`Temp`: The temperature, in degrees Fahrenheit.
+
+`Precip`: The precipitation, or rain, in inches per hour.
+
+`Dewpt`: The degrees in fahrenheit for dew to form.
+
+`Humidity`: The relative humidity in percent.
+
+`H/T-wind`: Windspeed parallel to kick, in miles per hour.
+
+`C-wind`: Crosswind speed (perpendicular to kick), in miles per hour.
+
+`Altitude`: The altitude of the stadium, in feet.
+
+`Wind`: Overall wind speed, in miles per hour.
+
+`Backup`: Whether or not the field goal was attempted by a backup kicker (not the team's starter, or best).
+
+`Def PA`: Points allowed by the other team (ability to prevent scoring).
+
+```{python}
+print(nfl_fg_clean.shape)
+```
+
+There are 3000 observations and 20 features, including the target.
 
 
 ## Exploratory Data Analysis
@@ -149,6 +174,7 @@ While outliers may be something to consider, it is also important to think about
 ### Data Splitting
 
 ```{python}
+#| code-fold: false
 nfl_train, nfl_test = train_test_split(nfl_fg_clean, test_size=0.2, random_state=4025)
 
 X_train = nfl_train.drop(columns=['Made'])
@@ -158,7 +184,7 @@ y_test = nfl_test['Made']
 ```
 
 ```{python}
-print(nfl_train["Made"].mean())
+print(f"The average number of field goals in this data set made is: "{nfl_train["Made"].mean()})
 ```
 As you can see, about 82 percent of the field goals in my training set were made. This means that accuracy should  be higher than 83% as it sets a baseline for the model.
 
@@ -204,6 +230,8 @@ Models that will be fitted:
 
 ### Logistic Regression
 ```{python}
+#| warning: false
+#| #| code-fold: false
 logreg_pipe = Pipeline([
     ('preprocess', preproc_scaler),
     ('model', LogisticRegression(l1_ratio=1, solver='saga'))
@@ -224,6 +252,8 @@ print(grid_search.best_params_)
 Because accuracy is likely to be untrustworthy due to our uneven class sizes, f1-score will be used instead in the grid search. This is because it weights precision and recall so that our result is more balanced.
 
 ```{python}
+#| warning: false
+#| #| code-fold: false
 logreg_pipe.fit(X_train, y_train)
 
 fig, ax = plt.subplots(figsize=(8, 6))
@@ -240,6 +270,7 @@ plt.show()
 It seems our ROC curve is pretty good, but it definitely could be better.
 
 ```{python}
+#| code-fold: false
 logreg_y_pred = logreg_pipe.predict(X=X_test)
 print(accuracy_score(y_test, logreg_y_pred))
 ```
@@ -248,6 +279,8 @@ Same with our accuracy. We would like this to be a little higher. Let's try some
 
 ### KNN
 ```{python}
+#| code-fold: false
+#| warning: false
 knn_pipe = Pipeline([
     ('preprocess', preproc_scaler),
     ('knn', KNeighborsClassifier())
@@ -272,6 +305,7 @@ print(f"Best Parameters: {knn_grid_search.best_params_}")
 ```
 
 ```{python}
+#| code-fold: false
 knn_best = knn_grid_search.best_estimator_
 knn_best.fit(X_train, y_train)
 
@@ -287,6 +321,8 @@ As you can see, KNN performed a little worse. Now on to some more complex models
 
 Because random forest doesn't require scaling, we don't really even require preprocessing for this model.
 ```{python}
+#| code-fold: false
+#| output: false
 rf_pipe = Pipeline([
   ('preproc', preproc_no_scaler),
   ('clf', RandomForestClassifier(random_state=4025))
@@ -326,6 +362,8 @@ Interestingly, this is a little worse than the Logistic Regression model. Maybe 
 
 ### XGBoost
 ```{python}
+#| code-fold: false
+#| output: false
 xg_pipe = Pipeline([
   ('preproc', preproc_no_scaler),
   ('clf', XGBClassifier(random_state=4025))
@@ -401,7 +439,9 @@ KNN: 83.67% accuracy
 Random Forest: 83.3% accuracy
 XGBoost: 83.67% accuracy
 
-While there are other more important metrics that may capture the successfulness of the model better, I think that accuracy is probably overall more relevant because if we were actually using this data to bet money or anything similar to that in the real world, whether or not we are correct is the primary importance. 
+While there are other more metrics that may capture the successfulness of the model better, I think that accuracy is probably overall more relevant because if we were actually using this data to bet money in the real world, whether or not we are correct is the primary importance. 
+
+This means while by my experimentation Logistic Regression performed the best, there may be other models that would perform better. According to my analysis, Logistic Regression was the most successful.
 
 ## Conclusion
 
@@ -409,4 +449,4 @@ Overall, it seems like many of the models performed similarly. I think that this
 
 Another important part of this project was the lack of missing data, which is a part of why there was little data in the first place (I assume that is when they started collecting all that weather data). Were there to be more data and missing data, the process would be similar but a bit more complicated with imputation. 
 
-In the end, this project was a useful waay to apply concepts of machine learning and predictions to a data set with real world implications. I learned a lot about how to present data simply, and how to communicate in a way that is comprehensible to a larger audience. In the future, I would like to work on something with even more concrete application, which I think would allow me to use other skills that I am still developing.
+In the end, this project was a useful way to apply concepts of machine learning and predictions to a data set with real world implications. I learned a lot about how to present data simply, and how to communicate in a way that is comprehensible to a larger audience. In the future, I would like to work on something with even more concrete application, which I think would allow me to use other skills that I am still developing.
