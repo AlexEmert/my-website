@@ -5,6 +5,7 @@ project:
     - "images/"
     - "application/"
     - "projects/"
+    - "files"
 
 website:
   title: "Alex Emert"

@@ -140,9 +140,11 @@ While a correlation heatmap should be taken with a grain of salt with a binary r
 
 
 ```{python}
+#| warning: false
 (
   ggplot(nfl_graphing, aes(x='Temp', fill='Made')) +
-  geom_histogram()
+  geom_histogram() +
+  labs(title='Distribution of Temp')
 )
 ```
 
@@ -150,6 +152,7 @@ Depending on the strategy we use, skewness like this one may or may not be a pro
 
 
 ```{python}
+#| warning: false
 (
   ggplot(nfl_graphing, aes(x='H/T-wind', fill='Made')) +
   geom_histogram() +
@@ -223,15 +226,19 @@ preproc_no_scaler = ColumnTransformer([
 ## Model Fitting and Tuning
 
 Models that will be fitted:
+
 - Logistic Regression
+
 - K Nearest Neighbors
+
 - Random Forest
+
 - XGBoost classifier
 
 ### Logistic Regression
 ```{python}
 #| warning: false
-#| #| code-fold: false
+#| code-fold: false
 logreg_pipe = Pipeline([
     ('preprocess', preproc_scaler),
     ('model', LogisticRegression(l1_ratio=1, solver='saga'))
@@ -402,42 +409,17 @@ print(f"The tuned accuracy is: {xg_tuned_acc}")
 
 It seems the accuracy of this was quite similar to that of the other similar models.
 
-#### Feature Importances
-
-Earlier, after looking at the correlation matrix, it was estimated the `Dist`, or Distance, would be the most important feature. We can check this by looking at the XGBoost feature importances.
-```{python}
-result = permutation_importance(
-    xg_grid.best_estimator_, X_test, y_test, 
-    n_repeats=20, 
-    random_state=4025, 
-    scoring='f1'
-)
-
-importances_df = pd.DataFrame({
-    'feature': features_list,
-    'mean': result.importances_mean,
-    'std': result.importances_std
-}).sort_values(by='mean', ascending=False)
-
-plt.figure(figsize=(10, 6))
-plt.barh(importances_df['feature'][::-1], importances_df['mean'][::-1], xerr=importances_df['std'][::-1])
-plt.xlabel("Decrease in F1 Score")
-plt.title("Permutation Feature Importance")
-plt.tight_layout()
-plt.show()
-```
-
-```{python}
-print(xg_grid.best_estimator_.predict_proba(X_test)[:5])
-```
-
 ## Model Performance
 
 In the end, our final results were:
-Logistic Regression: 84.16% accuracy
-KNN: 83.67% accuracy
-Random Forest: 83.3% accuracy
-XGBoost: 83.67% accuracy
+
+- Logistic Regression: 84.16% accuracy
+
+- KNN: 83.67% accuracy
+
+- Random Forest: 83.3% accuracy
+
+- XGBoost: 83.67% accuracy
 
 While there are other more metrics that may capture the successfulness of the model better, I think that accuracy is probably overall more relevant because if we were actually using this data to bet money in the real world, whether or not we are correct is the primary importance. 
 
