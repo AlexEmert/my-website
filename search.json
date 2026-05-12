@@ -18,14 +18,14 @@
     "href": "application/coverletter.html",
     "title": "Cover Letter",
     "section": "",
-    "text": "Download Alexander Emert’s Cover Letter (PDF)"
+    "text": "Download Alexander Emert’s Cover Letter (PDF)\n\n{{ pdf files/coverletter.pdf width=100% height=800 }}"
   },
   {
     "objectID": "application/coverletter.html#view-my-cover-letter",
     "href": "application/coverletter.html#view-my-cover-letter",
     "title": "Cover Letter",
     "section": "",
-    "text": "Download Alexander Emert’s Cover Letter (PDF)"
+    "text": "Download Alexander Emert’s Cover Letter (PDF)\n\n{{ pdf files/coverletter.pdf width=100% height=800 }}"
   },
   {
     "objectID": "application/resume.html",
