@@ -4,7 +4,6 @@ format:
   html:
     code-fold: true
 execute:
-  freeze: auto
   cache: true
 ---
 
