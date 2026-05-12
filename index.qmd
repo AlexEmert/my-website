@@ -1,6 +1,6 @@
 ---
 title: "Alex Emert"
-image: images/profile_pic_.jpg
+image: files/profile_pic_.jpg
 about:
   template: jolla
   image-shape: round

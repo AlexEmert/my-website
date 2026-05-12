@@ -2,10 +2,9 @@ project:
   type: website
   resources:
     - "data/"
-    - "images/"
     - "application/"
     - "projects/"
-    - "files"
+    - "files/"
 
 website:
   title: "Alex Emert"
